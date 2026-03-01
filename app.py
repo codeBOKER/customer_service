@@ -92,3 +92,13 @@ async def test_webhook(request: Request):
     data = await request.json()
     response = await get_ai_response(data["message"]["text"])
     return {"response": response}
+
+import socket
+
+@app.get("/dns-test")
+async def dns_test():
+    try:
+        ip = socket.gethostbyname("api.telegram.org")
+        return {"resolved_ip": ip}
+    except Exception as e:
+        return {"error": str(e)}
