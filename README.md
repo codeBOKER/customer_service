@@ -4,7 +4,7 @@ sdk: docker
 emoji: 🚀
 colorFrom: blue
 colorTo: blue
-app_file: main.py
+app_file: app.py
 ---
 # customer_service
 
