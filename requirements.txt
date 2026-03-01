@@ -1,6 +1,6 @@
-fastapi==0.104.1
-uvicorn==0.24.0
-pinecone==2.2.4
-groq==0.4.1
-httpx==0.25.2
-python-dotenv==1.0.0
+fastapi
+uvicorn
+pinecone
+groq
+httpx
+python-dotenv
