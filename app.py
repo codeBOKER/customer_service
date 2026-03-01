@@ -51,7 +51,7 @@ async def get_ai_response(user_query: str):
 
     completion = groq_client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
-        model="llama3-8b-8192",
+        model="llama-3.3-70b-versatile,
     )
     return completion.choices[0].message.content
 
@@ -80,3 +80,9 @@ async def telegram_webhook(request: Request):
 @app.get("/")
 async def root():
     return {"message": "Hadhramout Bank AI Backend is Live"}
+
+@app.post("/test")
+async def test_webhook(request: Request):
+    data = await request.json()
+    response = await get_ai_response(user_text)
+    return {"response": response}
