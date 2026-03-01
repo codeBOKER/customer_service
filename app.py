@@ -51,7 +51,7 @@ async def get_ai_response(user_query: str):
 
     completion = groq_client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
-        model="llama-3.3-70b-versatile,
+        model="llama-3.3-70b-versatile",
     )
     return completion.choices[0].message.content
 
