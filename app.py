@@ -44,7 +44,7 @@ async def get_ai_response(user_query: str):
     prompt = f"""
     {PROMPT}
     
-    Message:{user_message}
+    Message:{user_query}
     
     Retrieved Context:{retrieved_context}
     
