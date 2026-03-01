@@ -54,6 +54,9 @@ async def get_ai_response(user_query: str):
     completion = groq_client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
         model=GROQ_MODEL,
+        temperature=0.1,
+        max_completion_tokens=600,
+        top_p=0.9,
     )
     return completion.choices[0].message.content
 
