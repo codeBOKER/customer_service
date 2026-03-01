@@ -11,6 +11,9 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
+EMBED_MODEL= os.environ.get("EMBED_MODEL")
+GROQ_MODEL = os.environ.get("GROQ_MODEL")
+
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index("customerserviceindex")
 groq_client = Groq(api_key=GROQ_API_KEY)
@@ -21,7 +24,7 @@ app = FastAPI()
 async def get_ai_response(user_query: str):
     # Vectorize query using Pinecone Inference
     query_embedding = pc.inference.embed(
-        model_id="multilingual-e5-large",
+        model=EMBED_MODEL,
         inputs=[user_query],
         parameters={"input_type": "query"}
     )
@@ -51,7 +54,7 @@ async def get_ai_response(user_query: str):
 
     completion = groq_client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
-        model="llama-3.3-70b-versatile",
+        model=GROQ_MODEL,
     )
     return completion.choices[0].message.content
 
@@ -84,5 +87,5 @@ async def root():
 @app.post("/test")
 async def test_webhook(request: Request):
     data = await request.json()
-    response = await get_ai_response(user_text)
+    response = await get_ai_response(data["message"]["text"])
     return {"response": response}
