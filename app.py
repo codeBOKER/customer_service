@@ -37,7 +37,7 @@ async def get_ai_response(user_query: str):
         include_metadata=True
     )
     
-    retrieved_text = "\n".join([res.metadata['original_text'] for res in search_results.matches])
+    retrieved_context = "\n".join([res.metadata['original_text'] for res in search_results.matches])
 
     # Construct the System Prompt
     # We use facts from the profile: Islamic banking, based in Mukalla [cite: 15, 6]
