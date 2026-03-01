@@ -1,6 +1,6 @@
 ---
 title: customer_service
-sdk: static
+sdk: docker
 emoji: 🚀
 colorFrom: blue
 colorTo: blue
