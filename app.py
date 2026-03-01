@@ -13,6 +13,7 @@ TELEGRAM_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
 EMBED_MODEL= os.environ.get("EMBED_MODEL")
 GROQ_MODEL = os.environ.get("GROQ_MODEL")
+PROMPT = os.environ.get("PROMPT")
 
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index("customerserviceindex")
@@ -41,15 +42,13 @@ async def get_ai_response(user_query: str):
     # Construct the System Prompt
     # We use facts from the profile: Islamic banking, based in Mukalla [cite: 15, 6]
     prompt = f"""
-    You are the official AI assistant for Hadhramout Bank (بنك حضرموت).
-    Your tone is professional, helpful, and culturally respectful to the Yemeni community.
-    Use ONLY the provided context to answer. If the information isn't there, 
-    kindly ask the customer to visit the main branch in Al Mukalla.
+    {PROMPT}
     
-    Context:
-    {context_text}
+    Message:{user_message}
     
-    Customer Question: {user_query}
+    Retrieved Context:{retrieved_context}
+    
+    Final Answer:
     """
 
     completion = groq_client.chat.completions.create(
