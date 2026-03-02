@@ -79,7 +79,7 @@ async def telegram_webhook(request: Request):
             # Get the intelligent response
             ai_answer = await get_ai_response(user_text)
             # Send back to Telegram
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(verify=False) as client:
                 await client.post(
                     TELEGRAM_URL,
                     headers={"Host": "api.telegram.org"},
