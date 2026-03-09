@@ -4,3 +4,4 @@ pinecone
 groq
 httpx
 python-dotenv
+supabase
