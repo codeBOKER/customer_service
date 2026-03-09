@@ -7,7 +7,7 @@ WORKDIR /app
 # Set environment variables for Hugging Face Spaces (can be overridden for local development)
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=8000 \
+    PORT=7860 \
     HF_HOME=/app/cache \
     TRANSFORMERS_CACHE=/app/cache
 
