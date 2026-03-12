@@ -20,8 +20,6 @@ class WebhookData(BaseModel):
 
 async def telegram_webhook(data: WebhookData):
     try:
-        print(f"Received webhook data: {data}")
-        
         if data.message:
             telegram_id = data.message.chat.id
             user_text = data.message.text
@@ -59,13 +57,10 @@ async def telegram_webhook(data: WebhookData):
                     
         return {"status": "ok"}
     except Exception as e:
-        print(f"Error in webhook: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 async def test_webhook(data: WebhookData):
     try:
-        print(f"Received test webhook data: {data}")
-        
         if not data.message:
             return {"error": "Missing 'message' field in request"}
             
@@ -85,5 +80,4 @@ async def test_webhook(data: WebhookData):
         
         return {"response": response}
     except Exception as e:
-        print(f"Error in test webhook: {str(e)}")
         return {"error": str(e)}
