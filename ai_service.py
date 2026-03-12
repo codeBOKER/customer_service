@@ -12,12 +12,10 @@ async def get_ai_response(user_query: str, telegram_id: int = None):
         return "Ai service is not available at the moment. Please try again later."
 
     # Save user message if database is available and telegram_id is provided
-    if telegram_id and db_manager:
-        db_manager.save_message(telegram_id, user_query, "user")
-
     conversation_history = ""
     if telegram_id and db_manager:
-        conversation_history = db_manager.get_formatted_history(telegram_id, limit=6)
+        db_manager.save_message(telegram_id, user_query, "user")
+        conversation_history = db_manager.get_formatted_history(telegram_id, limit=6)        
     
     
     query_embedding = pc.inference.embed(
@@ -36,6 +34,7 @@ async def get_ai_response(user_query: str, telegram_id: int = None):
     retrieved_context = "\n".join([res.metadata['original_text'] for res in search_results.matches])
 
     
+    # Prepare the user content with conversation history and context
     user_content = f"""
         ### Historical Conversation:
         {conversation_history}
@@ -46,12 +45,13 @@ async def get_ai_response(user_query: str, telegram_id: int = None):
         ### Current User Message:
         {user_query}
 
-        بناءً على ما سبق، قدم إجابة دقيقة ومفيدة للعميل:
-        """
+        Based on the above information, provide an accurate and helpful response to the customer:
+    """
+    
     completion = groq_client.chat.completions.create(
         messages=[
             {"role": "system", "content": PROMPT},
-            {"role": "user", "content": f"{conversation_history}\n\nRetrieved Context: {retrieved_context}\n\nCurrent User Message: {user_query}"}
+            {"role": "user", "content": user_content}
         ],
         model=GROQ_MODEL,
         temperature=0.1,
