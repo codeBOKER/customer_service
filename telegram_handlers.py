@@ -1,23 +1,35 @@
 from fastapi import Request
+from pydantic import BaseModel
 import httpx
 from config import TELEGRAM_URL
 from ai_service import get_ai_response
 from database import db_manager
 
-async def telegram_webhook(request: Request):
+class ChatInfo(BaseModel):
+    id: int
+    username: str = None
+    first_name: str = None
+    last_name: str = None
+
+class Message(BaseModel):
+    chat: ChatInfo
+    text: str = ""
+
+class WebhookData(BaseModel):
+    message: Message = None
+
+async def telegram_webhook(data: WebhookData):
     try:
-        data = await request.json()
         print(f"Received webhook data: {data}")
         
-        if "message" in data:
-            telegram_id = data["message"]["chat"]["id"]
-            user_text = data["message"].get("text", "")
+        if data.message:
+            telegram_id = data.message.chat.id
+            user_text = data.message.text
             
             # Extract user info
-            user_info = data["message"]["chat"]
-            username = user_info.get("username")
-            first_name = user_info.get("first_name")
-            last_name = user_info.get("last_name")
+            username = data.message.chat.username
+            first_name = data.message.chat.first_name
+            last_name = data.message.chat.last_name
 
             if user_text:
                 # Save user message to database if available
@@ -50,16 +62,15 @@ async def telegram_webhook(request: Request):
         print(f"Error in webhook: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-async def test_webhook(request: Request):
+async def test_webhook(data: WebhookData):
     try:
-        data = await request.json()
         print(f"Received test webhook data: {data}")
         
-        if "message" not in data:
+        if not data.message:
             return {"error": "Missing 'message' field in request"}
             
-        telegram_id = data["message"]["chat"]["id"]
-        user_text = data["message"]["text"]
+        telegram_id = data.message.chat.id
+        user_text = data.message.text
         
         # Save user message to database if available
         if db_manager:
