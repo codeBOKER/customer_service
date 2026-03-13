@@ -47,7 +47,7 @@ async def get_ai_response(user_query: str, telegram_id: int = None):
 
         Based on the above information, provide an accurate and helpful response to the customer:
     """
-    
+    print("User content:", user_content)
     completion = groq_client.chat.completions.create(
         messages=[
             {"role": "system", "content": PROMPT},
