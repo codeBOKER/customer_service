@@ -15,7 +15,7 @@ FastAPI backend for Hadhramout Bank AI customer service system.
 
 ## Features
 - Telegram webhook integration
-- AI-powered responses using Groq
+- AI-powered responses using Hugging Face Inference API
 - Database integration with Supabase
 - Vector search with Pinecone
 

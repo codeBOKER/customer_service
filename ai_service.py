@@ -1,5 +1,5 @@
 import re
-from config import pc, index, groq_client, EMBED_MODEL, GROQ_MODEL, PROMPT
+from config import pc, index, EMBED_MODEL, HF_MODEL, PROMPT, hf_client
 from database import db_manager
 
 def clean_ai_response(text: str):
@@ -7,8 +7,8 @@ def clean_ai_response(text: str):
     return cleaned_text.strip()
 
 async def get_ai_response(user_query: str, telegram_id: int = None):
-    
-    if not pc or not index or not groq_client:
+
+    if not pc or not index or not hf_client:
         return "Ai service is not available at the moment. Please try again later."
 
     # Save user message if database is available and telegram_id is provided
@@ -16,8 +16,7 @@ async def get_ai_response(user_query: str, telegram_id: int = None):
     if telegram_id and db_manager:
         db_manager.save_message(telegram_id, user_query, "user")
         conversation_history = db_manager.get_formatted_history(telegram_id, limit=6)        
-    
-    
+
     query_embedding = pc.inference.embed(
         model=EMBED_MODEL,
         inputs=[user_query],
@@ -48,19 +47,21 @@ async def get_ai_response(user_query: str, telegram_id: int = None):
         Based on the above information, provide an accurate and helpful response to the customer:
     """
     print("User content:", user_content)
-    completion = groq_client.chat.completions.create(
+
+    completion = hf_client.chat.completions.create(
+        model=HF_MODEL,
         messages=[
             {"role": "system", "content": PROMPT},
-            {"role": "user", "content": user_content}
+            {"role": "user", "content": user_content},
         ],
-        model=GROQ_MODEL,
         temperature=0.1,
-        max_completion_tokens=800,
+        max_tokens=800,
         top_p=0.9,
     )
+
     ai_response = completion.choices[0].message.content
     cleaned_response = clean_ai_response(ai_response)
-    
+
     # Save assistant response if database is available and telegram_id is provided
     if telegram_id and db_manager:
         db_manager.save_message(telegram_id, cleaned_response, "assistant")
