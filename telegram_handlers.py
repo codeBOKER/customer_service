@@ -44,7 +44,9 @@ async def telegram_webhook(data: WebhookData):
         
         if TELEGRAM_URL:
             try:
-                async with httpx.AsyncClient(timeout=30.0, verify=False, follow_redirects=True) as client:
+                from config import TELEGRAM_TOKEN 
+                
+                async with httpx.AsyncClient(timeout=40.0, verify=False, follow_redirects=True) as client:
                     payload = {
                         "chat_id": telegram_id,
                         "text": ai_answer,
@@ -54,19 +56,24 @@ async def telegram_webhook(data: WebhookData):
                     try:
                         response = await client.post(TELEGRAM_URL, json=payload)
                     except Exception as dns_err:
-                        print(f"--- DNS Failed (Errno -5), trying direct IP routing... ---")
-                        ip_url = TELEGRAM_URL.replace("api.telegram.org", TELEGRAM_IP)
-                        headers = {"Host": "api.telegram.org"}
+                        print(f"--- DNS Failed. Forcing Direct IP Routing to 149.154.167.220 ---")
                         
-                        response = await client.post(ip_url, json=payload, headers=headers)
+                        forced_ip_url = f"https://149.154.167.220/bot{TELEGRAM_TOKEN}/sendMessage"
+                        
+                        headers = {
+                            "Host": "api.telegram.org",
+                            "Content-Type": "application/json"
+                        }
+                        
+                        response = await client.post(forced_ip_url, json=payload, headers=headers)
                     
                     if response.status_code == 200:
-                        print(f"--- Success: Message delivered to {first_name} ---")
+                        print(f"--- Success: Message delivered via Direct IP Pipeline ---")
                     else:
-                        print(f"--- Telegram Error: {response.status_code} - {response.text} ---")
+                        print(f"--- Telegram Rejected Request: {response.status_code} - {response.text} ---")
                         
             except Exception as send_error:
-                print(f"--- Critical: All sending attempts failed: {str(send_error)} ---")
+                print(f"--- Emergency: Network Blockage Detected: {str(send_error)} ---")
                     
         return {"status": "ok"}
     except Exception as e:
