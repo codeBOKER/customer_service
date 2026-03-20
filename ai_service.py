@@ -27,7 +27,6 @@ async def search_bank_knowledge(query: str):
     
     return "\n".join([res.metadata['original_text'] for res in search_results.matches])
 
-# تعريف الأداة (Tool) الخاصة بالبحث في وثائق البنك
 TOOLS = [
     {
         "type": "function",
@@ -49,26 +48,23 @@ TOOLS = [
 ]
 
 async def get_ai_response(user_query: str, telegram_id: int):
-    # جلب التاريخ من قاعدة البيانات فقط (بدون إعادة حفظ الرسالة الحالية)
     conversation_history = []
     if db_manager:
-        raw_history = db_manager.get_history(telegram_id, limit=6)
-        for msg in raw_history:
-            # تأكد أن المحتوى ليس فارغاً
+        raw_history = db_manager.get_conversation_history(telegram_id, limit=6)
+        for msg in raw_history:            
             if msg.get('content'):
                 conversation_history.append({"role": msg['role'], "content": msg['content']})
 
-    # بناء الرسائل
     messages = [{"role": "system", "content": PROMPT}] + conversation_history
     
-    # إذا كان hf_client متزامن، يفضل تشغيله هكذا لتجنب التوقف:
+    
     import asyncio
     loop = asyncio.get_event_loop()
     
-    # تنفيذ طلب الموديل
+    
     def call_hf():
         return hf_client.chat.completions.create(
-            model=HF_MODEL,
+            model=MODEL_NAME,
             messages=messages,
             temperature=0.1,
             max_tokens=800
