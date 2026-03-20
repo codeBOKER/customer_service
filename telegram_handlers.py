@@ -20,64 +20,43 @@ class WebhookData(BaseModel):
 
 async def telegram_webhook(data: WebhookData):
     try:
-        if data.message:
-            telegram_id = data.message.chat.id
-            user_text = data.message.text
-            
-            # Extract user info
-            username = data.message.chat.username
-            first_name = data.message.chat.first_name
-            last_name = data.message.chat.last_name
+        if not data.message or not data.message.text:
+            return {"status": "ok"}
 
-            if user_text:
-                # Save user message to database if available
-                if db_manager:
-                    db_manager.save_message(telegram_id, user_text, "user")
-                    db_manager.create_or_update_user(telegram_id, username, first_name, last_name)
-                
-                # Get the intelligent response with conversation history
-                ai_answer = await get_ai_response(user_text, telegram_id)
-                
-                # Save assistant response to database if available
-                if db_manager:
-                    db_manager.save_message(telegram_id, ai_answer, "assistant")
-                
-                # Send back to Telegram if TELEGRAM_URL is available
-                if TELEGRAM_URL:
-                    async with httpx.AsyncClient(verify=False) as client:
-                        await client.post(
-                            TELEGRAM_URL,
-                            headers={"Host": "api.telegram.org"},
-                            json={
-                                "chat_id": telegram_id,
-                                "text": ai_answer,
-                                "parse_mode": "Markdown"
-                            }
-                        )
-                    
-        return {"status": "ok"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-async def test_webhook(data: WebhookData):
-    try:
-        if not data.message:
-            return {"error": "Missing 'message' field in request"}
-            
         telegram_id = data.message.chat.id
         user_text = data.message.text
         
-        # Save user message to database if available
+        # معلومات المستخدم
+        username = data.message.chat.username
+        first_name = data.message.chat.first_name
+
+        print(f"--- Processing message from {first_name} ---")
+
+        # 1. تحديث بيانات المستخدم وحفظ رسالته (مرة واحدة فقط هنا)
         if db_manager:
+            db_manager.create_or_update_user(telegram_id, username, first_name, data.message.chat.last_name)
             db_manager.save_message(telegram_id, user_text, "user")
         
-        # Get response with conversation history
-        response = await get_ai_response(user_text, telegram_id)
+        # 2. جلب الرد (تأكد من إزالة حفظ الرسالة المتكرر داخل get_ai_response)
+        ai_answer = await get_ai_response(user_text, telegram_id)
         
-        # Save assistant response to database if available
+        # 3. حفظ رد البوت
         if db_manager:
-            db_manager.save_message(telegram_id, response, "assistant")
+            db_manager.save_message(telegram_id, ai_answer, "assistant")
         
-        return {"response": response}
+        # 4. الإرسال لتليجرام (تم تنظيفه من الهيدرز الزائدة)
+        if TELEGRAM_URL:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                payload = {
+                    "chat_id": telegram_id,
+                    "text": ai_answer,
+                    "parse_mode": "Markdown"
+                }
+                # حذفنا Host Header و verify=False (إلا لو كنت متأكداً من حاجتك لها)
+                response = await client.post(TELEGRAM_URL, json=payload)
+                print(f"Telegram response status: {response.status_code}")
+                    
+        return {"status": "ok"}
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Error in webhook: {str(e)}")
+        return {"status": "error", "message": str(e)}

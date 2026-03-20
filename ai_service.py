@@ -48,70 +48,31 @@ TOOLS = [
     }
 ]
 
-async def get_ai_response(user_query: str, telegram_id: int = None):
-    if not pc or not index or not hf_client:
-        return "عذراً، خدمة الذكاء الاصطناعي غير متوفرة حالياً."
-
-    print(f"User query: {user_query}")
+async def get_ai_response(user_query: str, telegram_id: int):
+    # جلب التاريخ من قاعدة البيانات فقط (بدون إعادة حفظ الرسالة الحالية)
     conversation_history = []
-    if telegram_id and db_manager:
-        db_manager.save_message(telegram_id, user_query, "user")
-        # جلب آخر 6 رسائل لتوفير السياق للموديل
+    if db_manager:
         raw_history = db_manager.get_history(telegram_id, limit=6)
         for msg in raw_history:
-            conversation_history.append({"role": msg['role'], "content": msg['content']})
-    else:
-        conversation_history.append({"role": "user", "content": user_query})
+            # تأكد أن المحتوى ليس فارغاً
+            if msg.get('content'):
+                conversation_history.append({"role": msg['role'], "content": msg['content']})
 
-    
+    # بناء الرسائل
     messages = [{"role": "system", "content": PROMPT}] + conversation_history
-
-    print(f"getting response from Messages: {messages}")
-    response = hf_client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=messages,
-        tools=TOOLS,
-        tool_choice="auto",
-        temperature=0.1 
-    )
-
-    response_message = response.choices[0].message
-    tool_calls = getattr(response_message, 'tool_calls', None)
-
     
-    if tool_calls:
-        print(f"tool_calls: {tool_calls}")
-        for tool_call in tool_calls:
-            function_args = json.loads(tool_call.function.arguments)
-            search_query = function_args.get("query")
-            
-            
-            extracted_context = await search_bank_knowledge(search_query)
-            
-            
-            messages.append(response_message)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "search_bank_knowledge",
-                "content": extracted_context
-            })
-
-        
-        final_response = hf_client.chat.completions.create(
-            model=MODEL_NAME,
+    # إذا كان hf_client متزامن، يفضل تشغيله هكذا لتجنب التوقف:
+    import asyncio
+    loop = asyncio.get_event_loop()
+    
+    # تنفيذ طلب الموديل
+    def call_hf():
+        return hf_client.chat.completions.create(
+            model=HF_MODEL,
             messages=messages,
-            temperature=0.3
+            temperature=0.1,
+            max_tokens=800
         )
-        ai_final_content = final_response.choices[0].message.content
-    else:
-        print(f"response_message: {response_message}")
-        ai_final_content = response_message.content
-
-    print(f"ai_final_content: {ai_final_content}")
-    cleaned_response = clean_ai_response(ai_final_content)
     
-    if telegram_id and db_manager:
-        db_manager.save_message(telegram_id, cleaned_response, "assistant")
-    
-    return cleaned_response
+    completion = await loop.run_in_executor(None, call_hf)
+    return clean_ai_response(completion.choices[0].message.content)
