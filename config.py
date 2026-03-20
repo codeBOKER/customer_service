@@ -20,15 +20,9 @@ TELEGRAM_URL = f"https://149.154.167.220/bot{TELEGRAM_TOKEN}/sendMessage" if TEL
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "multilingual-e5-large")
 HF_MODEL = os.environ.get(
     "HF_MODEL",
-    "dphn/Dolphin-Mistral-24B-Venice-Edition:featherless-ai",
+    "dphn/Dolphin-Mistral-24B-Venice-Edition",
 )
-PROMPT = os.environ.get(
-    "PROMPT",
-    "You are a helpful customer service assistant for Hadhramout Bank. "
-    "Answer the user's question based on the provided context. If the context "
-    "doesn't contain the answer, politely say you don't have enough information "
-    "to help with that specific query."
-)
+PROMPT = os.environ.get("PROMPT")
 
 # Initialize clients only if API keys are available
 pc = None
