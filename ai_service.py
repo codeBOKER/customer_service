@@ -5,7 +5,7 @@ from config import pc, index, EMBED_MODEL, hf_client, PROMPT
 from database import db_manager
 
 
-MODEL_NAME = "dolphin-mistral-24b-venice-edition"
+MODEL_NAME = "dphn/Dolphin-Mistral-24B-Venice-Edition:featherless-ai"
 
 def clean_ai_response(text: str):
     if not text: return ""
