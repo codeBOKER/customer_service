@@ -44,17 +44,23 @@ async def telegram_webhook(data: WebhookData):
         if db_manager:
             db_manager.save_message(telegram_id, ai_answer, "assistant")
         
-        # 4. الإرسال لتليجرام (تم تنظيفه من الهيدرز الزائدة)
+        
         if TELEGRAM_URL:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                payload = {
-                    "chat_id": telegram_id,
-                    "text": ai_answer,
-                    "parse_mode": "Markdown"
-                }
-                # حذفنا Host Header و verify=False (إلا لو كنت متأكداً من حاجتك لها)
-                response = await client.post(TELEGRAM_URL, json=payload)
-                print(f"Telegram response status: {response.status_code}")
+            try:
+                async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+                    payload = {
+                        "chat_id": telegram_id,
+                        "text": ai_answer,
+                        "parse_mode": "Markdown"
+                    }
+                    
+                    response = await client.post(TELEGRAM_URL, json=payload)
+                    
+                    if response.status_code != 200:
+                        print(f"--- Telegram Error: {response.status_code} - {response.text} ---")
+                        
+            except Exception as send_error:
+                print(f"--- Failed to send to Telegram: {str(send_error)} ---")
                     
         return {"status": "ok"}
     except Exception as e:
