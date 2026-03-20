@@ -52,7 +52,7 @@ async def get_ai_response(user_query: str, telegram_id: int = None):
     if not pc or not index or not hf_client:
         return "عذراً، خدمة الذكاء الاصطناعي غير متوفرة حالياً."
 
-    # 1. إدارة تاريخ المحادثة
+    print(f"User query: {user_query}")
     conversation_history = []
     if telegram_id and db_manager:
         db_manager.save_message(telegram_id, user_query, "user")
@@ -66,7 +66,7 @@ async def get_ai_response(user_query: str, telegram_id: int = None):
     
     messages = [{"role": "system", "content": PROMPT}] + conversation_history
 
-    
+    print(f"getting response from Messages: {messages}")
     response = hf_client.chat.completions.create(
         model=MODEL_NAME,
         messages=messages,
@@ -80,7 +80,7 @@ async def get_ai_response(user_query: str, telegram_id: int = None):
 
     
     if tool_calls:
-        
+        print(f"tool_calls: {tool_calls}")
         for tool_call in tool_calls:
             function_args = json.loads(tool_call.function.arguments)
             search_query = function_args.get("query")
@@ -105,10 +105,10 @@ async def get_ai_response(user_query: str, telegram_id: int = None):
         )
         ai_final_content = final_response.choices[0].message.content
     else:
-        
+        print(f"response_message: {response_message}")
         ai_final_content = response_message.content
 
-    
+    print(f"ai_final_content: {ai_final_content}")
     cleaned_response = clean_ai_response(ai_final_content)
     
     if telegram_id and db_manager:
