@@ -1,4 +1,4 @@
-POST https://codeboker-customer-service.hf.space/ai-test HTTP/1.1
+GET https://codeboker-customer-service.hf.space/ai-test HTTP/1.1
 Content-Type: application/json
 
 {

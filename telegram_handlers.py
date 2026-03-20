@@ -5,6 +5,8 @@ from config import TELEGRAM_URL
 from ai_service import get_ai_response
 from database import db_manager
 
+TELEGRAM_IP = "149.154.167.220"
+
 class ChatInfo(BaseModel):
     id: int
     username: str = None
@@ -26,41 +28,45 @@ async def telegram_webhook(data: WebhookData):
         telegram_id = data.message.chat.id
         user_text = data.message.text
         
-        # معلومات المستخدم
         username = data.message.chat.username
         first_name = data.message.chat.first_name
 
         print(f"--- Processing message from {first_name} ---")
 
-        # 1. تحديث بيانات المستخدم وحفظ رسالته (مرة واحدة فقط هنا)
         if db_manager:
             db_manager.create_or_update_user(telegram_id, username, first_name, data.message.chat.last_name)
             db_manager.save_message(telegram_id, user_text, "user")
         
-        # 2. جلب الرد (تأكد من إزالة حفظ الرسالة المتكرر داخل get_ai_response)
         ai_answer = await get_ai_response(user_text, telegram_id)
         
-        # 3. حفظ رد البوت
         if db_manager:
             db_manager.save_message(telegram_id, ai_answer, "assistant")
         
-        
         if TELEGRAM_URL:
             try:
-                async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+                async with httpx.AsyncClient(timeout=30.0, verify=False, follow_redirects=True) as client:
                     payload = {
                         "chat_id": telegram_id,
                         "text": ai_answer,
                         "parse_mode": "Markdown"
                     }
                     
-                    response = await client.post(TELEGRAM_URL, json=payload)
+                    try:
+                        response = await client.post(TELEGRAM_URL, json=payload)
+                    except Exception as dns_err:
+                        print(f"--- DNS Failed (Errno -5), trying direct IP routing... ---")
+                        ip_url = TELEGRAM_URL.replace("api.telegram.org", TELEGRAM_IP)
+                        headers = {"Host": "api.telegram.org"}
+                        
+                        response = await client.post(ip_url, json=payload, headers=headers)
                     
-                    if response.status_code != 200:
+                    if response.status_code == 200:
+                        print(f"--- Success: Message delivered to {first_name} ---")
+                    else:
                         print(f"--- Telegram Error: {response.status_code} - {response.text} ---")
                         
             except Exception as send_error:
-                print(f"--- Failed to send to Telegram: {str(send_error)} ---")
+                print(f"--- Critical: All sending attempts failed: {str(send_error)} ---")
                     
         return {"status": "ok"}
     except Exception as e:
