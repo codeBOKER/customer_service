@@ -1,11 +1,11 @@
 import re
 import json
 import os
-from config import pc, index, EMBED_MODEL, hf_client, PROMPT
+from config import pc, index, EMBED_MODEL, hf_client, PROMPT, HF_MODEL
 from database import db_manager
 
 
-MODEL_NAME = "dphn/Dolphin-Mistral-24B-Venice-Edition:featherless-ai"
+MODEL_NAME = HF_MODEL
 
 def clean_ai_response(text: str):
     if not text: return ""
@@ -32,13 +32,13 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "search_bank_knowledge",
-            "description": "استخدم هذه الأداة للبحث في الملف التعريفي الرسمي لبنك حضرموت للحصول على معلومات دقيقة حول الخدمات، الهيكل التنظيمي، رأس المال، والسياسات.",
+            "description": "Use this tool to search the official Hadhramout Bank profile for accurate information about services, organizational structure, capital, and policies.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "جملة البحث باللغة العربية (مثال: 'ما هو رأس مال بنك حضرموت؟' أو 'خدمات الأفراد')."
+                        "description": "The search query (e.g., 'What is Hadhramout Bank capital?' or 'individual services')."
                     }
                 },
                 "required": ["query"]
