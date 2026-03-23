@@ -62,13 +62,33 @@ async def get_ai_response(user_query: str, telegram_id: int):
     loop = asyncio.get_event_loop()
     
     
-    def call_hf():
+    def call_hf(msgs):
         return hf_client.chat.completions.create(
             model=MODEL_NAME,
-            messages=messages,
+            messages=msgs,
+            tools=TOOLS,
+            tool_choice="auto",
             temperature=0.1,
             max_tokens=800
         )
-    
-    completion = await loop.run_in_executor(None, call_hf)
-    return clean_ai_response(completion.choices[0].message.content)
+
+    completion = await loop.run_in_executor(None, lambda: call_hf(messages))
+    response_message = completion.choices[0].message
+
+    # Handle tool call if model requests it
+    if response_message.tool_calls:
+        tool_call = response_message.tool_calls[0]
+        args = json.loads(tool_call.function.arguments)
+        tool_result = await search_bank_knowledge(args["query"])
+
+        messages.append(response_message)
+        messages.append({
+            "role": "tool",
+            "tool_call_id": tool_call.id,
+            "content": tool_result
+        })
+
+        completion = await loop.run_in_executor(None, lambda: call_hf(messages))
+        response_message = completion.choices[0].message
+
+    return clean_ai_response(response_message.content)
