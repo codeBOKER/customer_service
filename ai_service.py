@@ -9,8 +9,20 @@ MODEL_NAME = HF_MODEL
 
 def clean_ai_response(text: str):
     if not text: return ""
-    cleaned_text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-    return cleaned_text.strip()
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    # Remove markdown tables
+    text = re.sub(r'\|.*?\|', '', text)
+    text = re.sub(r'[-|]{3,}', '', text)
+    # Remove HTML tags
+    text = re.sub(r'<br\s*/?>', '\n', text)
+    text = re.sub(r'<[^>]+>', '', text)
+    # Remove markdown bold/italic
+    text = re.sub(r'[*_]{1,3}(.*?)[*_]{1,3}', r'\1', text)
+    # Remove markdown headers
+    text = re.sub(r'^#{1,6}\s*', '', text, flags=re.MULTILINE)
+    # Clean up extra blank lines
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
 
 async def search_bank_knowledge(query: str):
     query_embedding = pc.inference.embed(
