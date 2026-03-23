@@ -51,9 +51,11 @@ async def get_ai_response(user_query: str, telegram_id: int):
     conversation_history = []
     if db_manager:
         raw_history = db_manager.get_conversation_history(telegram_id, limit=6)
-        for msg in raw_history:            
-            if msg.get('content'):
-                conversation_history.append({"role": msg['role'], "content": msg['content']})
+        raw_history.reverse()
+        for msg in raw_history:
+            if msg.get('message_text'):
+                role = "user" if msg['message_type'] == 'user' else "assistant"
+                conversation_history.append({"role": role, "content": msg['message_text']})
 
     messages = [{"role": "system", "content": PROMPT}] + conversation_history + [{"role": "user", "content": user_query}]
     
@@ -91,4 +93,10 @@ async def get_ai_response(user_query: str, telegram_id: int):
         completion = await loop.run_in_executor(None, lambda: call_hf(messages))
         response_message = completion.choices[0].message
 
-    return clean_ai_response(response_message.content)
+    final_response = clean_ai_response(response_message.content)
+
+    if db_manager:
+        db_manager.save_message(telegram_id, user_query, "user")
+        db_manager.save_message(telegram_id, final_response, "assistant")
+
+    return final_response
