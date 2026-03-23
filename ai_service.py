@@ -55,7 +55,7 @@ async def get_ai_response(user_query: str, telegram_id: int):
             if msg.get('content'):
                 conversation_history.append({"role": msg['role'], "content": msg['content']})
 
-    messages = [{"role": "system", "content": PROMPT}] + conversation_history
+    messages = [{"role": "system", "content": PROMPT}] + conversation_history + [{"role": "user", "content": user_query}]
     
     
     import asyncio
