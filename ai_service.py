@@ -10,12 +10,12 @@ MODEL_NAME = HF_MODEL
 def clean_ai_response(text: str):
     if not text: return ""
     text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-    # Remove markdown tables
-    text = re.sub(r'\|.*?\|', '', text)
-    text = re.sub(r'[-|]{3,}', '', text)
     # Remove HTML tags
     text = re.sub(r'<br\s*/?>', '\n', text)
     text = re.sub(r'<[^>]+>', '', text)
+    # Remove markdown tables (lines that start and end with |)
+    text = re.sub(r'^\|.*\|\s*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^[\s|:-]+$', '', text, flags=re.MULTILINE)
     # Remove markdown bold/italic
     text = re.sub(r'[*_]{1,3}(.*?)[*_]{1,3}', r'\1', text)
     # Remove markdown headers
