@@ -35,12 +35,11 @@ async def telegram_webhook(data: WebhookData):
 
         if db_manager:
             db_manager.create_or_update_user(telegram_id, username, first_name, data.message.chat.last_name)
-            db_manager.save_message(telegram_id, user_text, "user")
+
         
         ai_answer = await get_ai_response(user_text, telegram_id)
         
-        if db_manager:
-            db_manager.save_message(telegram_id, ai_answer, "assistant")
+
         
         if TELEGRAM_URL:
             try:
@@ -49,8 +48,7 @@ async def telegram_webhook(data: WebhookData):
                 async with httpx.AsyncClient(timeout=40.0, verify=False, follow_redirects=True) as client:
                     payload = {
                         "chat_id": telegram_id,
-                        "text": ai_answer,
-                        "parse_mode": "Markdown"
+                        "text": ai_answer or "Sorry, I couldn't generate a response. Please try again."
                     }
                     
                     try:
