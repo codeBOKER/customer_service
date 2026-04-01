@@ -59,19 +59,22 @@ async def telegram_webhook(data: WebhookData):
                         response = await client.post(TELEGRAM_URL, json=payload)
                     except Exception as dns_err:
                         print(f"--- DNS Failed. Forcing Direct IP Routing to 149.154.167.220 ---")
-                        
+
                         forced_ip_url = f"https://{TELEGRAM_IP}/bot{TELEGRAM_TOKEN}/sendMessage"
-                        
-                        # Explicitly define headers and serialize the JSON manually
+
+                        # 1. Manually dump to JSON string to ensure UTF-8 for Arabic
+                        json_body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+
                         headers = {
                             "Host": "api.telegram.org",
-                            "Content-Type": "application/json"
+                            "Content-Type": "application/json",
+                            "Content-Length": str(len(json_body)) # Explicitly tell Telegram the size
                         }
-                        
-                        # Use 'data' instead of 'json' to ensure absolute control over the body
+
+                        # 2. Use 'content=' or 'data=' instead of 'json='
                         response = await client.post(
                             forced_ip_url, 
-                            data=json.dumps(payload), 
+                            content=json_body, 
                             headers=headers
                         )
                     
