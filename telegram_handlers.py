@@ -51,6 +51,8 @@ async def telegram_webhook(data: WebhookData):
                         "text": ai_answer or "Sorry, I couldn't generate a response. Please try again."
                     }
                     
+                    print(f"--- Payload being sent: {payload} ---")
+                    
                     try:
                         response = await client.post(TELEGRAM_URL, json=payload)
                     except Exception as dns_err:
@@ -68,6 +70,7 @@ async def telegram_webhook(data: WebhookData):
                     if response.status_code == 200:
                         print(f"--- Success: Message delivered via Direct IP Pipeline ---")
                     else:
+                        print(f"--- Payload: {payload} ---")
                         print(f"--- Telegram Rejected Request: {response.status_code} - {response.text} ---")
                         
             except Exception as send_error:
