@@ -1,4 +1,3 @@
-from fastapi import Request
 from pydantic import BaseModel
 import httpx
 import json
@@ -7,6 +6,50 @@ from ai_service import get_ai_response
 from database import db_manager
 
 TELEGRAM_IP = "149.154.167.220"
+MAX_TELEGRAM_MESSAGE_LENGTH = 4096
+
+
+def _sanitize_telegram_text(text: str) -> str:
+    if text is None:
+        return ""
+
+    normalized = str(text).replace("\r\n", "\n").replace("\r", "\n")
+
+    # Remove control/surrogate chars that Telegram can reject.
+    cleaned = "".join(
+        ch
+        for ch in normalized
+        if (ch in ("\n", "\t") or ord(ch) >= 32) and not (0xD800 <= ord(ch) <= 0xDFFF)
+    )
+    return cleaned.strip()
+
+
+def _split_telegram_message(text: str, max_length: int = MAX_TELEGRAM_MESSAGE_LENGTH):
+    if len(text) <= max_length:
+        return [text]
+
+    parts = []
+    remaining = text
+
+    while len(remaining) > max_length:
+        split_at = remaining.rfind("\n", 0, max_length)
+        if split_at == -1:
+            split_at = remaining.rfind(" ", 0, max_length)
+        if split_at == -1:
+            split_at = max_length
+
+        part = remaining[:split_at].strip()
+        if not part:
+            part = remaining[:max_length]
+            split_at = max_length
+
+        parts.append(part)
+        remaining = remaining[split_at:].strip()
+
+    if remaining:
+        parts.append(remaining)
+
+    return parts
 
 class ChatInfo(BaseModel):
     id: int
@@ -47,42 +90,55 @@ async def telegram_webhook(data: WebhookData):
                 from config import TELEGRAM_TOKEN 
                 
                 async with httpx.AsyncClient(timeout=40.0, verify=False, follow_redirects=True) as client:
-                    payload = {
-                        "chat_id": telegram_id,
-                        "text": ai_answer or "Sorry, I couldn't generate a response. Please try again."
-                    }
-                    
-                    print(f"--- Payload being sent: {payload} ---")
-                    
-                    try:
-                        # Attempt standard request
-                        response = await client.post(TELEGRAM_URL, json=payload)
-                    except Exception as dns_err:
-                        print(f"--- DNS Failed. Forcing Direct IP Routing to 149.154.167.220 ---")
+                    prepared_text = _sanitize_telegram_text(
+                        ai_answer or "Sorry, I couldn't generate a response. Please try again."
+                    )
+                    if not prepared_text:
+                        prepared_text = "Sorry, I couldn't generate a response. Please try again."
 
-                        forced_ip_url = f"https://{TELEGRAM_IP}/bot{TELEGRAM_TOKEN}/sendMessage"
+                    message_parts = _split_telegram_message(prepared_text, MAX_TELEGRAM_MESSAGE_LENGTH)
 
-                        # 1. Manually dump to JSON string to ensure UTF-8 for Arabic
-                        json_body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
-
-                        headers = {
-                            "Host": "api.telegram.org",
-                            "Content-Type": "application/json",
-                            "Content-Length": str(len(json_body)) # Explicitly tell Telegram the size
+                    for idx, part in enumerate(message_parts, start=1):
+                        payload = {
+                            "chat_id": telegram_id,
+                            "text": part,
                         }
 
-                        # 2. Use 'content=' or 'data=' instead of 'json='
-                        response = await client.post(
-                            forced_ip_url, 
-                            content=json_body, 
-                            headers=headers
+                        print(
+                            f"--- Sending Telegram message part {idx}/{len(message_parts)} "
+                            f"(chars={len(part)}) ---"
                         )
-                    
-                    if response.status_code == 200:
-                        print(f"--- Success: Message delivered via Direct IP Pipeline ---")
+
+                        try:
+                            # Use form data for maximal compatibility with Telegram endpoint parsers.
+                            response = await client.post(TELEGRAM_URL, data=payload)
+                        except Exception:
+                            print(f"--- DNS Failed. Forcing Direct IP Routing to {TELEGRAM_IP} ---")
+
+                            forced_ip_url = f"https://{TELEGRAM_IP}/bot{TELEGRAM_TOKEN}/sendMessage"
+                            json_body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                            headers = {
+                                "Host": "api.telegram.org",
+                                "Content-Type": "application/json; charset=utf-8",
+                                "Content-Length": str(len(json_body)),
+                            }
+
+                            response = await client.post(
+                                forced_ip_url,
+                                content=json_body,
+                                headers=headers,
+                            )
+
+                        if response.status_code != 200:
+                            print(f"--- Telegram payload rejected (part {idx}) ---")
+                            print(f"--- Payload: {payload} ---")
+                            print(
+                                f"--- Telegram Rejected Request: "
+                                f"{response.status_code} - {response.text} ---"
+                            )
+                            break
                     else:
-                        print(f"--- Payload: {payload} ---")
-                        print(f"--- Telegram Rejected Request: {response.status_code} - {response.text} ---")
+                        print("--- Success: All Telegram message parts delivered ---")
                         
             except Exception as send_error:
                 print(f"--- Emergency: Network Blockage Detected: {str(send_error)} ---")
