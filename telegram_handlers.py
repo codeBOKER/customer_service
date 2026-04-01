@@ -46,32 +46,31 @@ async def telegram_webhook(data: WebhookData):
                 from config import TELEGRAM_TOKEN 
                 
                 async with httpx.AsyncClient(timeout=40.0, verify=False, follow_redirects=True) as client:
+                    # 1. Clean the input
+                    clean_answer = str(ai_answer).strip() if ai_answer else ""
+                    
+                    # 2. Ensure it's not empty
+                    if not clean_answer:
+                        clean_answer = "Default fallback: The AI returned an empty result."
+
                     payload = {
                         "chat_id": telegram_id,
-                        "text": ai_answer or "Sorry, I couldn't generate a response. Please try again."
+                        "text": clean_answer
                     }
                     
-                    print(f"--- Payload being sent: {payload} ---")
-                    
+                    # 3. Explicitly log the type and content
+                    print(f"DEBUG: ai_answer type: {type(ai_answer)}")
+                    print(f"DEBUG: Sending Payload: {payload}")
+
                     try:
+                        # Try standard URL first
                         response = await client.post(TELEGRAM_URL, json=payload)
                     except Exception as dns_err:
-                        print(f"--- DNS Failed. Forcing Direct IP Routing to 149.154.167.220 ---")
-                        
+                        print(f"--- DNS Failed. Routing to IP ---")
                         forced_ip_url = f"https://149.154.167.220/bot{TELEGRAM_TOKEN}/sendMessage"
-                        
-                        headers = {
-                            "Host": "api.telegram.org",
-                            "Content-Type": "application/json"
-                        }
-                        
+                        headers = {"Host": "api.telegram.org"}
+                        # Use 'json=' to ensure httpx sets the correct Content-Type automatically
                         response = await client.post(forced_ip_url, json=payload, headers=headers)
-                    
-                    if response.status_code == 200:
-                        print(f"--- Success: Message delivered via Direct IP Pipeline ---")
-                    else:
-                        print(f"--- Payload: {payload} ---")
-                        print(f"--- Telegram Rejected Request: {response.status_code} - {response.text} ---")
                         
             except Exception as send_error:
                 print(f"--- Emergency: Network Blockage Detected: {str(send_error)} ---")
