@@ -12,10 +12,10 @@ HF_TOKEN = os.environ.get("HF_TOKEN") or os.environ.get("HF_API_KEY")
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-TELEGRAM_DOMAIN = os.environ.get("TELEGRAM_DOMAIN")
+TELEGRAM_DOMAIN = os.environ.get("TELEGRAM_DOMAIN", "https://api.telegram.org").rstrip("/")
 
 # Only create TELEGRAM_URL if token exists
-TELEGRAM_URL = f"{TELEGRAM_DOMAIN}/bot{TELEGRAM_TOKEN}/sendMessage" if TELEGRAM_TOKEN else None
+TELEGRAM_URL = f"{TELEGRAM_DOMAIN}/bot{TELEGRAM_TOKEN}/sendMessage" if TELEGRAM_TOKEN and TELEGRAM_DOMAIN else None
 
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "multilingual-e5-large")
 HF_MODEL = os.environ.get(

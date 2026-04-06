@@ -10,17 +10,11 @@ MODEL_NAME = HF_MODEL
 def clean_ai_response(text: str):
     if not text: return ""
     text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-    # Remove HTML tags
     text = re.sub(r'<br\s*/?>', '\n', text)
     text = re.sub(r'<[^>]+>', '', text)
-    # Remove markdown tables (lines that start and end with |)
     text = re.sub(r'^\|.*\|\s*$', '', text, flags=re.MULTILINE)
     text = re.sub(r'^[\s|:-]+$', '', text, flags=re.MULTILINE)
-    # Remove markdown bold/italic
-    text = re.sub(r'[*_]{1,3}(.*?)[*_]{1,3}', r'\1', text)
-    # Remove markdown headers
     text = re.sub(r'^#{1,6}\s*', '', text, flags=re.MULTILINE)
-    # Clean up extra blank lines
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
@@ -105,7 +99,9 @@ async def get_ai_response(user_query: str, telegram_id: int):
         completion = await loop.run_in_executor(None, lambda: call_hf(messages))
         response_message = completion.choices[0].message
 
-    final_response = clean_ai_response(response_message.content)
+    final_response = clean_ai_response(response_message.content if response_message.content else "")
+    print(f"--- AI Raw Response: {repr(response_message.content)} ---")
+    print(f"--- AI Final Response: {repr(final_response)} ---")
 
     if db_manager:
         db_manager.save_message(telegram_id, user_query, "user")
