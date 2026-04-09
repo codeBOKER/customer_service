@@ -48,8 +48,6 @@ async def telegram_webhook(data: WebhookData):
         username = data.message.chat.username
         first_name = data.message.chat.first_name
 
-        print(f"--- Processing message from {first_name} ---")
-
         if db_manager:
             db_manager.create_or_update_user(telegram_id, username, first_name, data.message.chat.last_name)
 
@@ -75,7 +73,6 @@ async def telegram_webhook(data: WebhookData):
                         "text": final_text if final_text.strip() else ".",
                     }
 
-                    print(f"--- Sending Telegram message (chars={len(payload['text'])}) ---")
 
                     try:                        
                         response = await client.post(TELEGRAM_URL, data=payload)

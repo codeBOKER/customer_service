@@ -100,8 +100,6 @@ async def get_ai_response(user_query: str, telegram_id: int):
         response_message = completion.choices[0].message
 
     final_response = clean_ai_response(response_message.content if response_message.content else "")
-    print(f"--- AI Raw Response: {repr(response_message.content)} ---")
-    print(f"--- AI Final Response: {repr(final_response)} ---")
 
     if db_manager:
         db_manager.save_message(telegram_id, user_query, "user")
