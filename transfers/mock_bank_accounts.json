@@ -1,0 +1,68 @@
+{
+  "accounts": [
+    {
+      "telegram_id": 12,
+      "account_id": "ACC-00012",
+      "serial_id": "1001",
+      "name": "Test Sender",
+      "balance": 1900.0,
+      "currency": "YER"
+    },
+    {
+      "telegram_id": 991001,
+      "account_id": "ACC-991001",
+      "serial_id": "2001",
+      "name": "Ahmed Salem",
+      "balance": 1800.0,
+      "currency": "YER"
+    },
+    {
+      "telegram_id": 991002,
+      "account_id": "ACC-991002",
+      "serial_id": "2002",
+      "name": "Mona Ali",
+      "balance": 800.0,
+      "currency": "YER"
+    },
+    {
+      "telegram_id": 991003,
+      "account_id": "ACC-991003",
+      "serial_id": "2003",
+      "name": "Khaled Omar",
+      "balance": 300.0,
+      "currency": "YER"
+    }
+  ],
+  "transactions": [
+    {
+      "transaction_id": "TX-20260410193334671954",
+      "telegram_id": 12,
+      "sender_serial_id": "1001",
+      "receiver_serial_id": "2001",
+      "receiver_name": "Ahmed Salem",
+      "amount": 200.0,
+      "currency": "YER",
+      "created_at": "2026-04-10T19:33:34.671995"
+    },
+    {
+      "transaction_id": "TX-20260410193344247493",
+      "telegram_id": 12,
+      "sender_serial_id": "1001",
+      "receiver_serial_id": "2001",
+      "receiver_name": "Ahmed Salem",
+      "amount": 200.0,
+      "currency": "YER",
+      "created_at": "2026-04-10T19:33:44.247529"
+    },
+    {
+      "transaction_id": "TX-20260410193354495302",
+      "telegram_id": 12,
+      "sender_serial_id": "1001",
+      "receiver_serial_id": "2001",
+      "receiver_name": "Ahmed Salem",
+      "amount": 200.0,
+      "currency": "YER",
+      "created_at": "2026-04-10T19:33:54.495350"
+    }
+  ]
+}

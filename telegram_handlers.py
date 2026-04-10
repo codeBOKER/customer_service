@@ -1,9 +1,9 @@
-from pydantic import BaseModel
 import httpx
 import json
 from config import TELEGRAM_URL
 from ai_service import get_ai_response
 from database import db_manager
+from schemas import WebhookData
 
 TELEGRAM_IP = "149.154.167.220"
 MAX_TELEGRAM_MESSAGE_LENGTH = 4096
@@ -23,19 +23,6 @@ def _sanitize_telegram_text(text: str) -> str:
     )
     return cleaned.strip()
 
-
-class ChatInfo(BaseModel):
-    id: int
-    username: str = None
-    first_name: str = None
-    last_name: str = None
-
-class Message(BaseModel):
-    chat: ChatInfo
-    text: str = ""
-
-class WebhookData(BaseModel):
-    message: Message = None
 
 async def telegram_webhook(data: WebhookData):
     try:

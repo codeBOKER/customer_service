@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Header, Request
+from schemas import AiTestRequest, WebhookData
 from security import validate_webhook_secret
-from telegram_handlers import telegram_webhook, WebhookData
+from telegram_handlers import telegram_webhook
 from utils import dns_test, test_ai_response
 
 app = FastAPI()
@@ -27,10 +28,11 @@ async def dns(
     validate_webhook_secret(request, x_telegram_bot_api_secret_token)
     return await dns_test()
 
-@app.get("/ai-test")
+@app.post("/ai-test")
 async def ai(
     request: Request,
+    data: AiTestRequest,
     x_telegram_bot_api_secret_token: str | None = Header(default=None),
 ):
     validate_webhook_secret(request, x_telegram_bot_api_secret_token)
-    return await test_ai_response()
+    return await test_ai_response(data.message, data.telegram_id)

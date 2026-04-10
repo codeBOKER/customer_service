@@ -1,11 +1,10 @@
-GET https://codeboker-customer-service.hf.space/ai-test HTTP/1.1
+POST http://localhost:8000/ai-test HTTP/1.1
 Content-Type: application/json
+X-Telegram-Bot-Api-Secret-Token: {{$dotenv TELEGRAM_WEBHOOK_SECRET}}
 
 {
-    "message": {
-        "chat": {"id": 123},
-        "text": "هاي"
-    }
+    "message": "confirm then tell me how much that he has in his account",
+    "telegram_id": 12
 }
 ###
 GET https://codeboker-customer-service.hf.space/ai-test HTTP/1.1
@@ -13,6 +12,8 @@ GET https://codeboker-customer-service.hf.space/ai-test HTTP/1.1
 ###
 POST https://codeboker-customer-service.hf.space/webhook HTTP/1.1
 Content-Type: application/json
+X-Telegram-Bot-Api-Secret-Token: {{$dotenv TELEGRAM_WEBHOOK_SECRET}}
+
 {
     "message": {
         "chat": {"id": 123},
