@@ -1,5 +1,7 @@
 import httpx
 import json
+import html
+import re
 from config import TELEGRAM_URL
 from ai_service import get_ai_response
 from database import db_manager
@@ -22,6 +24,17 @@ def _sanitize_telegram_text(text: str) -> str:
         if (ch in ("\n", "\t") or ord(ch) >= 32) and not (0xD800 <= ord(ch) <= 0xDFFF)
     )
     return cleaned.strip()
+
+
+def _format_telegram_message(text: str) -> str:
+    """Convert **bold** to <b>bold</b> for HTML parse mode."""
+    if not text:
+        return text
+    # First escape HTML to prevent injection
+    escaped = html.escape(text, quote=False)
+    # Replace **text** with <b>text</b> (non-greedy)
+    formatted = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', escaped)
+    return formatted
 
 
 async def telegram_webhook(data: WebhookData):
@@ -54,10 +67,14 @@ async def telegram_webhook(data: WebhookData):
                     if not prepared_text:
                         prepared_text = "Sorry, I couldn't generate a response. Please try again."
 
-                    final_text = prepared_text[:MAX_TELEGRAM_MESSAGE_LENGTH]
+                    # Format for HTML parse mode
+                    formatted_text = _format_telegram_message(prepared_text)
+
+                    final_text = formatted_text[:MAX_TELEGRAM_MESSAGE_LENGTH]
                     payload = {
                         "chat_id": telegram_id,
                         "text": final_text if final_text.strip() else ".",
+                        "parse_mode": "HTML",
                     }
 
 
