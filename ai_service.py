@@ -8,6 +8,7 @@ from transfers import (
     cancel_transfer,
     get_pending_transfer,
     get_account_balance,
+    get_sender_account,
 )
 
 
@@ -126,6 +127,23 @@ TOOLS = [
                 "required": []
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_illusion_account",
+            "description": "Use this tool when the user needs an illusion account created for testing purposes. Requires the user's name.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "user_name": {
+                        "type": "string",
+                        "description": "The name of the user for the illusion account."
+                    }
+                },
+                "required": ["user_name"]
+            }
+        }
     }
 ]
 
@@ -150,6 +168,8 @@ async def run_tool(tool_name: str, args: dict, telegram_id: int):
         return json.dumps(cancel_transfer(telegram_id), ensure_ascii=False)
     if tool_name == "get_pending_money_transfer":
         return json.dumps(get_pending_transfer(telegram_id), ensure_ascii=False)
+    if tool_name == "create_illusion_account":
+        return json.dumps(get_sender_account(telegram_id, args["user_name"]), ensure_ascii=False)
     return json.dumps({"success": False, "message": f"Unknown tool: {tool_name}"}, ensure_ascii=False)
 
 async def get_ai_response(user_query: str, telegram_id: int):
@@ -164,11 +184,9 @@ async def get_ai_response(user_query: str, telegram_id: int):
 
     transfer_instructions = (
         f"Current user telegram_id is {telegram_id}. "
-        "The customer service system cannot create bank accounts. "
         "The model must never choose, guess, extract, or override any telegram_id for tool calls. "
         "Always act only for the current authenticated user from server-side request context. "
         "If the user asks for another person's balance or provides another person's telegram ID, refuse and explain that you can only access the current user's own account. "
-        "If the sender does not already have a bank account, clearly tell them they must visit the bank to create one. "
         "If the user asks for their balance, call check_account_balance. "
         "For money transfers, first collect the receiver account serial ID and the amount if it is missing. "
         "Then call prepare_money_transfer to fetch the receiver name and store the pending transfer. "
@@ -176,6 +194,9 @@ async def get_ai_response(user_query: str, telegram_id: int):
         "Only call confirm_money_transfer after the user clearly agrees. "
         "If the user rejects the receiver or wants to stop, call cancel_money_transfer. "
         "Never claim a transfer is completed unless confirm_money_transfer returns success."
+        "If a tool result returns 'need_user_name': true, ask the user for their name and then call create_illusion_account with their name. "
+        "If a tool result indicates an illusion account was created (contains 'is_illusion': true or mentions testing), inform the user that an illusion account with 2000 YER balance was created for testing purposes. "
+        "If confirm_money_transfer returns a result with 'is_illusion': true, make sure to display the testing disclaimer message to the user."
     )
     messages = [{"role": "system", "content": f"{BASE_PROMPT}\n\n{transfer_instructions}"}] + conversation_history + [{"role": "user", "content": user_query}]
     

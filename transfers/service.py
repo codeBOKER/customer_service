@@ -48,19 +48,48 @@ def _find_account_by_serial_id(accounts: list[Dict[str, Any]], serial_id: str) -
     return next((account for account in accounts if str(account.get("serial_id")) == normalized_id), None)
 
 
-def get_sender_account(telegram_id: int) -> Dict[str, Any]:
+def get_sender_account(telegram_id: int, user_name: str = None) -> Dict[str, Any]:
     with _LOCK:
         data = _load_bank_data()
         sender = _find_account_by_telegram_id(data["accounts"], telegram_id)
         if sender:
+            is_real = sender.get("is_real", True)
+            is_illusion = not is_real or sender.get("name", "").startswith("Test User")
             return {
                 "success": True,
                 "account": sender,
+                "is_real": is_real,
+                "is_illusion": is_illusion,
             }
 
+        # Ask for user name before creating illusion account
+        if not user_name:
+            return {
+                "success": False,
+                "need_user_name": True,
+                "message": "I need to create an illusion account for testing purposes. What is your name?",
+            }
+
+        # Create illusion account for testing purposes
+        new_account = {
+            "telegram_id": telegram_id,
+            "account_id": f"ACC-{telegram_id}",
+            "serial_id": str(9000 + telegram_id % 1000),
+            "name": f"Test User {user_name}",
+            "balance": 2000.0,
+            "currency": "YER",
+            "is_real": False
+        }
+        
+        data["accounts"].append(new_account)
+        _save_bank_data(data)
+        
         return {
-            "success": False,
-            "message": "You do not have an account in the bank system. Please visit the bank to create an account first.",
+            "success": True,
+            "account": new_account,
+            "is_real": False,
+            "is_illusion": True,
+            "message": f"I've created an illusion account for {user_name} with 2000 YER balance to try sending money. This is for testing purposes only."
         }
 
 
@@ -70,7 +99,7 @@ def get_account_balance(telegram_id: int) -> Dict[str, Any]:
         return sender_result
 
     account = sender_result["account"]
-    return {
+    result = {
         "success": True,
         "telegram_id": telegram_id,
         "account_id": account["account_id"],
@@ -78,7 +107,14 @@ def get_account_balance(telegram_id: int) -> Dict[str, Any]:
         "name": account["name"],
         "balance": account.get("balance", 0.0),
         "currency": account.get("currency", "YER"),
+        "is_real": sender_result.get("is_real", True),
+        "is_illusion": sender_result.get("is_illusion", False),
     }
+    
+    if result["is_illusion"]:
+        result["message"] = "This is an illusion account created for testing purposes with 2000 YER balance."
+    
+    return result
 
 
 def get_receiver_account_name(receiver_serial_id: str) -> Dict[str, Any]:
@@ -230,11 +266,21 @@ def confirm_transfer(telegram_id: int) -> Dict[str, Any]:
         pending_transfers.pop(str(telegram_id), None)
         _save_pending_transfers(pending_transfers)
 
+        # Check if sender is an illusion account using is_real variable
+        is_real = sender.get("is_real", True)
+        is_illusion = not is_real
+        
+        message = f"Transfer completed successfully to {receiver['name']}."
+        if is_illusion:
+            message += " ⚠️ Please note: This process was not real - it was for testing purposes only. No actual money was transferred."
+        
         return {
             "success": True,
             "transaction": transaction,
             "sender_balance": sender["balance"],
-            "message": f"Transfer completed successfully to {receiver['name']}.",
+            "is_real": is_real,
+            "is_illusion": is_illusion,
+            "message": message,
         }
 
 
