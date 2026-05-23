@@ -180,7 +180,7 @@ async def get_ai_response(user_query: str, telegram_id: int):
     conversation_history = []
     if db_manager:
         print("arriving to get history messages: \n")
-        raw_history = db_manager.get_conversation_history(telegram_id, limit=6)
+        raw_history = await db_manager.get_conversation_history(telegram_id, limit=6)
         raw_history.reverse()
         for msg in raw_history:
             if msg.get('message_text'):
