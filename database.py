@@ -14,6 +14,10 @@ class DatabaseManager:
         self.supabase: Optional[AsyncClient] = None
         self.logger = logging.getLogger(__name__)
 
+    async def _ensure_connection(self):
+        if self.supabase is None:
+            await self.connect()
+
     async def connect(self):
         """Initialize the async client"""
         if not self.supabase:
@@ -21,6 +25,7 @@ class DatabaseManager:
 
     async def create_or_update_user(self, telegram_id: int, username: str = None, 
                                     first_name: str = None, last_name: str = None):
+        await self._ensure_connection()
         try:
             existing_user = await self.supabase.table("users").select("id").eq("telegram_id", telegram_id).execute()
             
@@ -44,6 +49,7 @@ class DatabaseManager:
             return None
 
     async def save_message(self, telegram_id: int, message_text: str, message_type: str):
+        await self._ensure_connection()
         try:
             await self.create_or_update_user(telegram_id)
             
@@ -63,6 +69,7 @@ class DatabaseManager:
             return None
 
     async def get_conversation_history(self, telegram_id: int, limit: int = 10) -> List[Dict]:
+        await self._ensure_connection()
         try:
             result = await (self.supabase.table("messages")
                            .select("message_text, message_type, created_at")
@@ -76,6 +83,7 @@ class DatabaseManager:
             return []
 
     async def _ensure_active_session(self, telegram_id: int):
+        await self._ensure_connection()
         try:
             active = await (self.supabase.table("conversation_sessions")
                             .select("id")
