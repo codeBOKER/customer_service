@@ -49,7 +49,7 @@ async def telegram_webhook(data: WebhookData):
         first_name = data.message.chat.first_name
 
         if db_manager:
-            db_manager.create_or_update_user(telegram_id, username, first_name, data.message.chat.last_name)
+            await db_manager.create_or_update_user(telegram_id, username, first_name, data.message.chat.last_name)
 
         
         ai_answer = await get_ai_response(user_text, telegram_id)
