@@ -241,12 +241,4 @@ async def get_ai_response(user_query: str, telegram_id: int):
         completion = await loop.run_in_executor(None, lambda: call_hf(messages))
         response_message = completion.choices[0].message
 
-    final_response = clean_ai_response(response_message.content if response_message.content else "")
-
-    if db_manager:
-        await asyncio.gather(
-            db_manager.save_message(telegram_id, user_query, "user"),
-            db_manager.save_message(telegram_id, final_response, "assistant")
-        )
-
-    return final_response
+    return clean_ai_response(response_message.content if response_message.content else "")
