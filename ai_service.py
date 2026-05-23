@@ -16,6 +16,7 @@ MODEL_NAME = HF_MODEL
 BASE_PROMPT = PROMPT or "You are a helpful banking customer service assistant."
 
 def clean_ai_response(text: str):
+    print("arriving to clean function: \n")
     if not text: return ""
     text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
     text = re.sub(r'<br\s*/?>', '\n', text)
@@ -27,12 +28,14 @@ def clean_ai_response(text: str):
     return text.strip()
 
 async def search_bank_knowledge(query: str):
+    
+    print("arriving to start embed function: \n")
     query_embedding = pc.inference.embed(
         model=EMBED_MODEL,
         inputs=[query],
         parameters={"input_type": "query"}
     )
-    
+    print("arriving to index query function: \n")
     search_results = index.query(
         vector=query_embedding[0].values,
         top_k=3,
@@ -149,6 +152,7 @@ TOOLS = [
 
 
 async def run_tool(tool_name: str, args: dict, telegram_id: int):
+    print("arriving to calling tools: \n")
     if tool_name == "search_bank_knowledge":
         return await search_bank_knowledge(args["query"])
     if tool_name == "check_account_balance":
@@ -175,6 +179,7 @@ async def run_tool(tool_name: str, args: dict, telegram_id: int):
 async def get_ai_response(user_query: str, telegram_id: int):
     conversation_history = []
     if db_manager:
+        print("arriving to get history messages: \n")
         raw_history = db_manager.get_conversation_history(telegram_id, limit=6)
         raw_history.reverse()
         for msg in raw_history:
@@ -206,6 +211,7 @@ async def get_ai_response(user_query: str, telegram_id: int):
     
     
     def call_hf(msgs):
+        print("arriving to call hugging face: \n")
         return hf_client.chat.completions.create(
             model=MODEL_NAME,
             messages=msgs,
@@ -238,6 +244,7 @@ async def get_ai_response(user_query: str, telegram_id: int):
     final_response = clean_ai_response(response_message.content if response_message.content else "")
 
     if db_manager:
+        print("arriving to save message: \n")
         db_manager.save_message(telegram_id, user_query, "user")
         db_manager.save_message(telegram_id, final_response, "assistant")
 
