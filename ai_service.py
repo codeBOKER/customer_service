@@ -245,8 +245,8 @@ async def get_ai_response(user_query: str, telegram_id: int):
 
     if db_manager:
         await asyncio.gather(
-            db_manager.save_message_async(telegram_id, user_query, "user"),
-            db_manager.save_message_async(telegram_id, final_response, "assistant")
+            db_manager.save_message(telegram_id, user_query, "user"),
+            db_manager.save_message(telegram_id, final_response, "assistant")
         )
 
     return final_response
