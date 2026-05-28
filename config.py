@@ -24,6 +24,7 @@ HF_MODEL = os.environ.get(
     "dphn/Dolphin-Mistral-24B-Venice-Edition",
 )
 PROMPT = os.environ.get("PROMPT")
+TRANSFER_PROMPT = os.environ.get("TRANSFER_PROMPT")
 
 # Initialize clients only if API keys are available
 pc = None

@@ -1,6 +1,6 @@
 import re
 import json
-from config import pc, index, EMBED_MODEL, hf_client, PROMPT, HF_MODEL
+from config import pc, index, EMBED_MODEL, hf_client, PROMPT, HF_MODEL, TRANSFER_PROMPT
 from database import db_manager
 from transfers import (
     prepare_transfer,
@@ -14,6 +14,22 @@ from transfers import (
 
 MODEL_NAME = HF_MODEL
 BASE_PROMPT = PROMPT or "You are a helpful banking customer service assistant."
+TRANSFER_PROMPT = TRANSFER_PROMPT or (
+    "Current user telegram_id is {telegram_id}. "
+    "The model must never choose, guess, extract, or override any telegram_id for tool calls. "
+    "Always act only for the current authenticated user from server-side request context. "
+    "If the user asks for another person's balance or provides another person's telegram ID, refuse and explain that you can only access the current user's own account. "
+    "If the user asks for their balance, call check_account_balance. "
+    "For money transfers, first collect the receiver account serial ID and the amount if it is missing. "
+    "Then call prepare_money_transfer to fetch the receiver name and store the pending transfer. "
+    "Show the receiver name back to the user and ask for explicit confirmation. "
+    "Only call confirm_money_transfer after the user clearly agrees. "
+    "If the user rejects the receiver or wants to stop, call cancel_money_transfer. "
+    "Never claim a transfer is completed unless confirm_money_transfer returns success. "
+    "If a tool result returns 'need_user_name': true, ask the user for their name and then call create_illusion_account with their name. "
+    "If a tool result indicates an illusion account was created (contains 'is_illusion': true or mentions testing), inform the user that an illusion account with 2000 YER balance was created for testing purposes. "
+    "If confirm_money_transfer returns a result with 'is_illusion': true, make sure to display the testing disclaimer message to the user."
+)
 
 def clean_ai_response(text: str):
     print("arriving to clean function: \n")
@@ -187,22 +203,7 @@ async def get_ai_response(user_query: str, telegram_id: int):
                 role = "user" if msg['message_type'] == 'user' else "assistant"
                 conversation_history.append({"role": role, "content": msg['message_text']})
 
-    transfer_instructions = (
-        f"Current user telegram_id is {telegram_id}. "
-        "The model must never choose, guess, extract, or override any telegram_id for tool calls. "
-        "Always act only for the current authenticated user from server-side request context. "
-        "If the user asks for another person's balance or provides another person's telegram ID, refuse and explain that you can only access the current user's own account. "
-        "If the user asks for their balance, call check_account_balance. "
-        "For money transfers, first collect the receiver account serial ID and the amount if it is missing. "
-        "Then call prepare_money_transfer to fetch the receiver name and store the pending transfer. "
-        "Show the receiver name back to the user and ask for explicit confirmation. "
-        "Only call confirm_money_transfer after the user clearly agrees. "
-        "If the user rejects the receiver or wants to stop, call cancel_money_transfer. "
-        "Never claim a transfer is completed unless confirm_money_transfer returns success."
-        "If a tool result returns 'need_user_name': true, ask the user for their name and then call create_illusion_account with their name. "
-        "If a tool result indicates an illusion account was created (contains 'is_illusion': true or mentions testing), inform the user that an illusion account with 2000 YER balance was created for testing purposes. "
-        "If confirm_money_transfer returns a result with 'is_illusion': true, make sure to display the testing disclaimer message to the user."
-    )
+    transfer_instructions = TRANSFER_PROMPT.format(telegram_id=telegram_id)
     messages = [{"role": "system", "content": f"{BASE_PROMPT}\n\n{transfer_instructions}"}] + conversation_history + [{"role": "user", "content": user_query}]
     
     
