@@ -57,7 +57,8 @@ async def search_bank_knowledge(query: str):
         top_k=3,
         include_metadata=True
     )
-    
+    print("arriving to index query function: \n")
+    print("\n".join([res.metadata['original_text'] for res in search_results.matches]))
     return "\n".join([res.metadata['original_text'] for res in search_results.matches])
 
 TOOLS = [
