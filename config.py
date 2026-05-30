@@ -8,6 +8,7 @@ load_dotenv()
 
 # Environment Variables
 PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
+PINECONE_INDEX = os.environ.get("PINECONE_INDEX", "customerserviceindex")
 HF_TOKEN = os.environ.get("HF_TOKEN") or os.environ.get("HF_API_KEY")
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET")
@@ -45,4 +46,4 @@ if HF_TOKEN:
 # Initialize index only if Pinecone client is available
 index = None
 if pc:
-    index = pc.Index("customerserviceindex")
+    index = pc.Index(PINECONE_INDEX)

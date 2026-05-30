@@ -31,16 +31,25 @@ TRANSFER_PROMPT = TRANSFER_PROMPT or (
     "If confirm_money_transfer returns a result with 'is_illusion': true, make sure to display the testing disclaimer message to the user."
 )
 
-def clean_ai_response(text: str):
-    print("arriving to clean function: \n")
-    if not text: return ""
+
+def clean_ai_response(text: str) -> str:
+    if not text:
+        return ""
+
     text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-    text = re.sub(r'<br\s*/?>', '\n', text)
+    
+    text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'</?(p|div|span|section)[^>]*>', '\n', text, flags=re.IGNORECASE)
+    
     text = re.sub(r'<[^>]+>', '', text)
+
     text = re.sub(r'^\|.*\|\s*$', '', text, flags=re.MULTILINE)
     text = re.sub(r'^[\s|:-]+$', '', text, flags=re.MULTILINE)
+
     text = re.sub(r'^#{1,6}\s*', '', text, flags=re.MULTILINE)
+
     text = re.sub(r'\n{3,}', '\n\n', text)
+    
     return text.strip()
 
 async def search_bank_knowledge(query: str):
