@@ -53,21 +53,16 @@ def clean_ai_response(text: str) -> str:
     return text.strip()
 
 async def search_bank_knowledge(query: str):
-    
-    print("arriving to start embed function: \n")
     query_embedding = pc.inference.embed(
         model=EMBED_MODEL,
         inputs=[query],
         parameters={"input_type": "query"}
     )
-    print("arriving to index query function: \n")
     search_results = index.query(
         vector=query_embedding[0].values,
         top_k=3,
         include_metadata=True
     )
-    print("arriving to index query function: \n")
-    print("\n".join([res.metadata['original_text'] for res in search_results.matches]))
     return "\n".join([res.metadata['original_text'] for res in search_results.matches])
 
 TOOLS = [
@@ -178,7 +173,6 @@ TOOLS = [
 
 
 async def run_tool(tool_name: str, args: dict, telegram_id: int):
-    print("arriving to calling tools: \n")
     if tool_name == "search_bank_knowledge":
         return await search_bank_knowledge(args["query"])
     if tool_name == "check_account_balance":
@@ -205,7 +199,6 @@ async def run_tool(tool_name: str, args: dict, telegram_id: int):
 async def get_ai_response(user_query: str, telegram_id: int):
     conversation_history = []
     if db_manager:
-        print("arriving to get history messages: \n")
         raw_history = await db_manager.get_conversation_history(telegram_id, limit=6)
         raw_history.reverse()
         for msg in raw_history:
@@ -222,7 +215,6 @@ async def get_ai_response(user_query: str, telegram_id: int):
     
     
     def call_hf(msgs):
-        print("arriving to call hugging face: \n")
         return hf_client.chat.completions.create(
             model=MODEL_NAME,
             messages=msgs,
