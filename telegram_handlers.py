@@ -39,17 +39,28 @@ async def telegram_webhook(data: WebhookData):
         username = data.message.chat.username
         first_name = data.message.chat.first_name
 
-        # 1. تحديث المستخدم (Async)
         if db_manager:
             await db_manager.create_or_update_user(telegram_id, username, first_name, data.message.chat.last_name)
 
-        # 2. الحصول على رد الـ AI
-        ai_answer = await get_ai_response(user_text, telegram_id)
-        final_response = ai_answer or "Sorry, I couldn't generate a response."
-
-        # 3. إرسال الرسالة باستخدام IP مباشر لتجنب تأخير DNS
         if TELEGRAM_TOKEN:
             async with httpx.AsyncClient(timeout=40.0, verify=False) as client:
+                action_payload = {
+                    "chat_id": telegram_id,
+                    "action": "typing",
+                }
+                action_url = f"https://{TELEGRAM_IP}/bot{TELEGRAM_TOKEN}/sendChatAction"
+                headers = {
+                    "Host": "api.telegram.org",
+                    "Content-Type": "application/json; charset=utf-8",
+                }
+                try:
+                    await client.post(action_url, json=action_payload, headers=headers)
+                except Exception:
+                    pass
+
+                ai_answer = await get_ai_response(user_text, telegram_id)
+                final_response = ai_answer or "Sorry, I couldn't generate a response."
+
                 prepared_text = _sanitize_telegram_text(final_response)
                 formatted_text = _format_telegram_message(prepared_text)
                 final_text = formatted_text[:MAX_TELEGRAM_MESSAGE_LENGTH]
@@ -60,7 +71,6 @@ async def telegram_webhook(data: WebhookData):
                     "parse_mode": "HTML",
                 }
 
-                # رابط مباشر لتجاوز DNS
                 forced_ip_url = f"https://{TELEGRAM_IP}/bot{TELEGRAM_TOKEN}/sendMessage"
                 headers = {
                     "Host": "api.telegram.org",
@@ -71,7 +81,6 @@ async def telegram_webhook(data: WebhookData):
 
                 if response.status_code == 200:
                     print("--- Success: Telegram message delivered ---")
-                    # 4. حفظ المحادثة بعد التأكد من وصول الرسالة
                     if db_manager:
                         await asyncio.gather(
                             db_manager.save_message(telegram_id, user_text, "user"),
