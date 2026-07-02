@@ -5,7 +5,7 @@ An intelligent customer service assistant that helps bank customers get instant 
 ## Project Preview
 
 <p align="center">
-  <img src="media/customer_service.png" alt="Project Logo" width="600">
+  <img src="media/customer_service.png" alt="Project Logo" width="100%" >
 </p>
 
 

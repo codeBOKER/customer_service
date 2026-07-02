@@ -6,5 +6,3 @@ venv/
 .python-version
 .DS_Store
 rest.http
-
-media/*.png
