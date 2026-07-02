@@ -25,6 +25,10 @@ jobs:
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           
+          # HF rejects binary files — exclude media/ from the push
+          echo "media/" >> .gitignore
+          git rm -r --cached media/ 2>/dev/null || true
+          
           git remote add hf https://user:$HF_TOKEN@huggingface.co/spaces/codeBOKER/customer_service
           
           git commit -am "Update README for HF" || echo "No changes to commit"
